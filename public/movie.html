@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>影片详情 - JavBus API</title>
+  <style>
+    :root {
+      --bg: #f5f5f5;
+      --card-bg: #ffffff;
+      --text: #333333;
+      --text-secondary: #666666;
+      --text-muted: #999999;
+      --border: #e0e0e0;
+      --primary: #008cc4;
+      --primary-hover: #0070a3;
+      --tag-bg: #e8f4fd;
+      --tag-text: #008cc4;
+      --hd-bg: #fff3cd;
+      --hd-text: #856404;
+      --sub-bg: #d4edda;
+      --sub-text: #155724;
+      --skeleton: #e0e0e0;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1a2e;
+        --card-bg: #16213e;
+        --text: #e0e0e0;
+        --text-secondary: #a0a0a0;
+        --text-muted: #707070;
+        --border: #2a2a4a;
+        --primary: #4db8ff;
+        --primary-hover: #3aa0e8;
+        --tag-bg: #1a3a5c;
+        --tag-text: #4db8ff;
+        --hd-bg: #3a3500;
+        --hd-text: #ffc107;
+        --sub-bg: #0a3a1a;
+        --sub-text: #5cb85c;
+        --skeleton: #2a2a4a;
+        --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+      }
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans SC", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px;
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .container { max-width: 900px; margin: 0 auto; }
+
+    h1 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
+    h1 a { color: var(--text); text-decoration: none; }
+    h1 a:hover { color: var(--primary); }
+
+    .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
+
+    input[type=text] {
+      flex: 1; padding: 10px 14px; font-size: 16px;
+      border: 2px solid var(--border); border-radius: 8px;
+      background: var(--card-bg); color: var(--text); outline: none;
+      transition: border-color 0.2s;
+    }
+    input[type=text]:focus { border-color: var(--primary); }
+
+    button {
+      padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px;
+      cursor: pointer; font-weight: 600;
+      transition: background 0.2s, transform 0.1s;
+    }
+    button:active { transform: scale(0.97); }
+
+    .btn-primary { background: var(--primary); color: #ffffff; }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary {
+      background: var(--card-bg); color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { background: var(--border); }
+    .btn-sm { padding: 4px 10px; font-size: 13px; border-radius: 4px; }
+
+    /* Skeleton */
+    .skeleton {
+      background: linear-gradient(90deg, var(--skeleton) 25%, var(--card-bg) 50%, var(--skeleton) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s ease-in-out infinite;
+      border-radius: 4px;
+    }
+    @keyframes shimmer {
+      0% { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
+    .skeleton-full { display: flex; gap: 20px; padding: 20px; background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); }
+    .skeleton-cover { width: 240px; height: 340px; flex-shrink: 0; border-radius: 6px; }
+    .skeleton-body { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .skeleton-line { height: 18px; border-radius: 4px; }
+    .skeleton-line:first-child { width: 60%; }
+    .skeleton-line:nth-child(2) { width: 40%; }
+    .skeleton-line:nth-child(3) { width: 80%; }
+    .skeleton-line:nth-child(4) { width: 50%; }
+    .skeleton-line:nth-child(5) { width: 70%; }
+    .skeleton-line:nth-child(6) { width: 30%; }
+
+    /* Detail card */
+    .detail-card {
+      display: flex; gap: 24px; padding: 20px;
+      background: var(--card-bg); border-radius: 10px;
+      border: 1px solid var(--border); box-shadow: var(--shadow);
+    }
+    .cover { width: 240px; flex-shrink: 0; border-radius: 6px; background: var(--skeleton); min-height: 340px; background-size: cover; background-position: center; }
+    .detail-body { flex: 1; min-width: 0; }
+    .detail-body .movie-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; line-height: 1.4; }
+    .detail-body .movie-id {
+      display: inline-block; background: var(--tag-bg); color: var(--tag-text);
+      font-size: 14px; padding: 2px 10px; border-radius: 4px; margin-bottom: 12px;
+    }
+    .detail-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 16px; }
+    .detail-grid .label { color: var(--text-muted); white-space: nowrap; }
+    .detail-grid .value { color: var(--text); }
+
+    .genres { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+    .genre-tag {
+      display: inline-block; font-size: 12px; background: var(--tag-bg);
+      color: var(--tag-text); padding: 2px 8px; border-radius: 4px;
+    }
+
+    .stars-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+    .star-tag {
+      display: inline-block; font-size: 13px; background: var(--card-bg);
+      color: var(--text); padding: 3px 10px; border-radius: 4px;
+      border: 1px solid var(--border);
+    }
+
+    /* Magnets section */
+    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--primary); }
+
+    .magnet-item {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 10px; border: 1px solid var(--border);
+      border-radius: 6px; margin-bottom: 6px; font-size: 13px; flex-wrap: wrap;
+    }
+    .magnet-item .magnet-title { flex: 1; min-width: 120px; word-break: break-all; }
+    .magnet-item .magnet-title a { color: var(--text); text-decoration: none; }
+    .magnet-item .magnet-title a:hover { color: var(--primary); }
+
+    .magnet-badge {
+      display: inline-block; font-size: 11px; padding: 1px 5px;
+      border-radius: 3px; font-weight: 600; white-space: nowrap;
+    }
+    .magnet-badge.hd { background: var(--hd-bg); color: var(--hd-text); }
+    .magnet-badge.sub { background: var(--sub-bg); color: var(--sub-text); }
+    .magnet-meta { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+
+    .btn-copy {
+      cursor: pointer; background: none; border: 1px solid var(--border);
+      border-radius: 4px; padding: 2px 6px; font-size: 12px;
+      color: var(--text-secondary); white-space: nowrap;
+    }
+    .btn-copy:hover { background: var(--border); }
+
+    .magnet-loading, .magnet-empty { font-size: 13px; color: var(--text-muted); }
+
+    .empty-state, .error-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 15px; }
+    .error-state { color: #e74c3c; }
+
+    @media (max-width: 600px) {
+      body { padding: 12px; }
+      .detail-card { flex-direction: column; }
+      .cover { width: 100%; height: auto; aspect-ratio: 0.7; min-height: auto; }
+      .search-box { flex-direction: column; }
+      .magnet-item { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1><a href="/search">番号查询</a> / 影片详情</h1>
+
+    <form id="searchForm" class="search-box">
+      <input id="keyword" type="text" placeholder="输入番号继续搜索，例如：IPX-585" />
+      <button type="submit" class="btn-primary">查询</button>
+    </form>
+
+    <div id="content"></div>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/movie.js"></script>
+</body>
+
+</html>

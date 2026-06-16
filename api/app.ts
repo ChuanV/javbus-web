@@ -4,6 +4,7 @@ import { body } from 'express-validator'
 import { RequestError } from 'got'
 import createError, { isHttpError } from 'http-errors'
 import memorystore from 'memorystore'
+import path from 'node:path'
 
 import ENV from './env.js'
 import router from './router.js'
@@ -127,6 +128,16 @@ app.use((req, res, next) => {
   } else {
     next()
   }
+})
+
+// Serve movie detail page at `/movie` and `/movie/:id` (public, no auth required)
+app.get(['/movie', '/movie/:id'], (_req, res) => {
+  res.sendFile('movie.html', { root: path.join(process.cwd(), 'public') })
+})
+
+// Serve search page at `/search` (public, no auth required)
+app.get('/search', (_req, res) => {
+  res.sendFile('search.html', { root: path.join(process.cwd(), 'public') })
 })
 
 app.use('/api', router)
