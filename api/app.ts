@@ -46,6 +46,11 @@ app.use(express.json())
 // 用于解析 application/x-www-form-urlencoded
 app.use(express.urlencoded({ extended: true }))
 
+// Serve friendly search page at `/search` (public, no auth required)
+app.get('/search', (_req, res) => {
+  res.sendFile('search.html', { root: path.join(process.cwd(), 'public') })
+})
+
 const { JAVBUS_AUTH_TOKEN, ADMIN_USERNAME, ADMIN_PASSWORD, JAVBUS_SESSION_SECRET } = ENV
 const useCredentials = Boolean(ADMIN_USERNAME && ADMIN_PASSWORD)
 const loginValidators = [

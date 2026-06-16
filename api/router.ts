@@ -7,6 +7,8 @@ import {
   getMoviesByKeywordAndPage,
   getMoviesByPage,
   getStarInfo,
+  getGenreMovies,
+  getAllGenres,
 } from './javbus-parser.js'
 import type { MagnetType, MovieType, SortBy, SortOrder } from './types.js'
 import { validate } from './validator-utils.js'
@@ -15,6 +17,7 @@ import {
   moviesPageValidator,
   searchMoviesPageValidator,
   typeValidator,
+  baseMoviesPageValidator,
 } from './validators.js'
 
 const movieRouter = Router()
@@ -58,10 +61,13 @@ movieRouter.get('/:id', async (req, res, next) => {
 
   try {
     const movie = await getMovieDetail(movieId)
-
+    
+    // Add cache headers
+    res.setHeader('Cache-Control', 'private, max-age=300')
     res.json(movie)
   } catch (e) {
-    // 格式化一下错误
+    console.error(`Error fetching movie ${movieId}:`, e instanceof Error ? e.message : e)
+    // ś†ľŚľŹŚĆĖšłÄšłčťĒôŤĮĮ
     next(e instanceof Error && e.message.includes('404') ? new createError.NotFound() : e)
   }
 })
@@ -92,6 +98,37 @@ starRouter.get('/:id', validate([typeValidator]), async (req, res, next) => {
     next(e instanceof Error && e.message.includes('404') ? new createError.NotFound() : e)
   }
 })
+
+
+const genreRouter = Router();
+
+genreRouter.get('/', validate([typeValidator]), async (req, res, next) => {
+  const type = req.query.type as MovieType | undefined;
+
+  try {
+    const genres = await getAllGenres(type);
+
+    res.json(genres);
+  } catch (e) {
+    next(e);
+  }
+});
+
+genreRouter.get('/:id', validate([...baseMoviesPageValidator]), async (req, res, next) => {
+  const genreId = req.params.id as string;
+  const page = (req.query.page as string) || '1';
+  const type = req.query.type as MovieType | undefined;
+  const magnet = req.query.magnet as MagnetType | undefined;
+
+  try {
+    const response = await getGenreMovies(genreId, page, type, magnet);
+
+    res.json(response);
+  } catch (e) {
+    // 格式化一下错误
+    next(e instanceof Error && e.message.includes('404') ? new createError.NotFound() : e);
+  }
+});
 
 const magnetRouter = Router()
 
@@ -127,5 +164,6 @@ const router = Router()
 router.use('/movies', movieRouter)
 router.use('/stars', starRouter)
 router.use('/magnets', magnetRouter)
+router.use('/genres', genreRouter);
 
 export default router
