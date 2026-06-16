@@ -27,6 +27,7 @@
     "fmt": "oxfmt",
     "fmt:check": "oxfmt --check",
     "check": "oxlint --deny-warnings && oxfmt --check",
+    "d": "scripts\\deploy.cmd",
     "prepare": "husky"
   },
   "dependencies": {
