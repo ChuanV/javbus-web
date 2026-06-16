@@ -53,25 +53,38 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      padding: 24px;
       transition: background 0.3s, color 0.3s;
     }
 
-    .container { max-width: 900px; margin: 0 auto; }
-
-    h1 { font-size: 24px; font-weight: 700; margin-bottom: 16px; }
-    h1 a { color: var(--text); text-decoration: none; }
-    h1 a:hover { color: var(--primary); }
-
-    .search-box { display: flex; gap: 8px; margin-bottom: 20px; }
-
-    input[type=text] {
-      flex: 1; padding: 10px 14px; font-size: 16px;
-      border: 2px solid var(--border); border-radius: 8px;
-      background: var(--card-bg); color: var(--text); outline: none;
-      transition: border-color 0.2s;
+    .container {
+      width: 100%;
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 24px 16px;
     }
-    input[type=text]:focus { border-color: var(--primary); }
+
+    /* ---- Header ---- */
+    .page-header {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+      margin-bottom: 20px;
+    }
+    .page-header h1 {
+      font-size: 22px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .page-header h1 a {
+      color: var(--text);
+      text-decoration: none;
+    }
+    .page-header h1 a:hover { color: var(--primary); }
+    .page-header .breadcrumb {
+      font-size: 14px;
+      color: var(--text-muted);
+    }
 
     button {
       padding: 10px 20px; font-size: 16px; border: none; border-radius: 8px;
@@ -82,14 +95,9 @@
 
     .btn-primary { background: var(--primary); color: #ffffff; }
     .btn-primary:hover { background: var(--primary-hover); }
-    .btn-secondary {
-      background: var(--card-bg); color: var(--text);
-      border: 1px solid var(--border);
-    }
-    .btn-secondary:hover { background: var(--border); }
     .btn-sm { padding: 4px 10px; font-size: 13px; border-radius: 4px; }
 
-    /* Skeleton */
+    /* ---- Skeleton ---- */
     .skeleton {
       background: linear-gradient(90deg, var(--skeleton) 25%, var(--card-bg) 50%, var(--skeleton) 75%);
       background-size: 200% 100%;
@@ -100,61 +108,81 @@
       0% { background-position: 200% 0; }
       100% { background-position: -200% 0; }
     }
-    .skeleton-full { display: flex; gap: 20px; padding: 20px; background: var(--card-bg); border-radius: 10px; border: 1px solid var(--border); }
-    .skeleton-cover { width: 200px; height: 280px; flex-shrink: 0; border-radius: 6px; }
-    .skeleton-body { flex: 1; display: flex; flex-direction: column; gap: 10px; }
+    .skeleton-full {
+      display: flex; gap: 24px; padding: 24px;
+      background: var(--card-bg); border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+    .skeleton-cover { width: 240px; height: 340px; flex-shrink: 0; border-radius: 6px; }
+    .skeleton-body { flex: 1; display: flex; flex-direction: column; gap: 12px; }
     .skeleton-line { height: 18px; border-radius: 4px; }
-    .skeleton-line:first-child { width: 60%; }
+    .skeleton-line:first-child { width: 60%; height: 24px; }
     .skeleton-line:nth-child(2) { width: 40%; }
     .skeleton-line:nth-child(3) { width: 80%; }
     .skeleton-line:nth-child(4) { width: 50%; }
     .skeleton-line:nth-child(5) { width: 70%; }
     .skeleton-line:nth-child(6) { width: 30%; }
 
-    /* Detail card */
+    /* ---- Detail card ---- */
     .detail-card {
-      display: flex; gap: 24px; padding: 20px;
+      display: flex; gap: 24px; padding: 24px;
       background: var(--card-bg); border-radius: 10px;
       border: 1px solid var(--border); box-shadow: var(--shadow);
     }
-    .cover { width: 200px; flex-shrink: 0; border-radius: 6px; background: var(--skeleton); min-height: 280px; background-size: cover; background-position: center; }
+    .cover {
+      width: 240px; flex-shrink: 0; border-radius: 6px;
+      background: var(--skeleton); min-height: 340px;
+      background-size: cover; background-position: center;
+    }
     .detail-body { flex: 1; min-width: 0; }
-    .detail-body .movie-title { font-size: 20px; font-weight: 700; margin-bottom: 4px; line-height: 1.4; }
+    .detail-body .movie-title {
+      font-size: 22px; font-weight: 700; margin-bottom: 6px;
+      line-height: 1.4; word-break: break-word;
+    }
     .detail-body .movie-id {
       display: inline-block; background: var(--tag-bg); color: var(--tag-text);
-      font-size: 14px; padding: 2px 10px; border-radius: 4px; margin-bottom: 12px;
+      font-size: 14px; padding: 2px 10px; border-radius: 4px; margin-bottom: 14px;
     }
-    .detail-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 14px; margin-bottom: 16px; }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 6px 16px;
+      font-size: 14px;
+      margin-bottom: 16px;
+    }
     .detail-grid .label { color: var(--text-muted); white-space: nowrap; }
-    .detail-grid .value { color: var(--text); }
+    .detail-grid .value { color: var(--text); word-break: break-word; }
 
-    .genres { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+    .genres { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 16px; }
     .genre-tag {
       display: inline-block; font-size: 12px; background: var(--tag-bg);
       color: var(--tag-text); padding: 2px 8px; border-radius: 4px;
     }
 
-    .stars-list { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 16px; }
+    .stars-list { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin-bottom: 16px; }
     .star-tag {
       display: inline-block; font-size: 13px; background: var(--card-bg);
       color: var(--text); padding: 3px 10px; border-radius: 4px;
       border: 1px solid var(--border);
     }
 
-    /* Magnets section */
-    .section-title { font-size: 16px; font-weight: 600; margin-bottom: 8px; padding-bottom: 6px; border-bottom: 2px solid var(--primary); }
+    .section-title {
+      font-size: 16px; font-weight: 600; margin-bottom: 10px;
+      padding-bottom: 6px; border-bottom: 2px solid var(--primary);
+    }
 
+    /* ---- Magnets ---- */
     .magnet-item {
-      display: flex; align-items: center; gap: 6px;
-      padding: 8px 10px; border: 1px solid var(--border);
-      border-radius: 6px; margin-bottom: 6px; font-size: 13px; flex-wrap: wrap;
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: 6px; margin-bottom: 6px; font-size: 13px;
     }
     .magnet-item .magnet-title { flex: 1; min-width: 120px; word-break: break-all; }
     .magnet-item .magnet-title a { color: var(--text); text-decoration: none; }
     .magnet-item .magnet-title a:hover { color: var(--primary); }
 
     .magnet-badge {
-      display: inline-block; font-size: 11px; padding: 1px 5px;
+      display: inline-block; font-size: 11px; padding: 1px 6px;
       border-radius: 3px; font-weight: 600; white-space: nowrap;
     }
     .magnet-badge.hd { background: var(--hd-bg); color: var(--hd-text); }
@@ -163,34 +191,120 @@
 
     .btn-copy {
       cursor: pointer; background: none; border: 1px solid var(--border);
-      border-radius: 4px; padding: 2px 6px; font-size: 12px;
+      border-radius: 4px; padding: 3px 8px; font-size: 12px;
       color: var(--text-secondary); white-space: nowrap;
     }
     .btn-copy:hover { background: var(--border); }
 
-    .magnet-loading, .magnet-empty { font-size: 13px; color: var(--text-muted); }
+    .magnet-loading, .magnet-empty {
+      font-size: 13px; color: var(--text-muted);
+      padding: 8px 0;
+    }
 
-    .empty-state, .error-state { text-align: center; padding: 40px 20px; color: var(--text-muted); font-size: 15px; }
+    .empty-state, .error-state {
+      text-align: center; padding: 60px 20px;
+      color: var(--text-muted); font-size: 15px;
+    }
     .error-state { color: #e74c3c; }
 
-    @media (max-width: 600px) {
-      body { padding: 12px; }
-      .detail-card { flex-direction: column; }
-      .cover { width: 100%; height: auto; aspect-ratio: 0.7; min-height: auto; }
-      .search-box { flex-direction: column; }
-      .magnet-item { flex-direction: column; align-items: flex-start; }
+    /* ========== Responsive ========== */
+
+    /* Tablet (≤768px) */
+    @media (max-width: 768px) {
+      .container { padding: 16px 12px; }
+
+      .page-header { margin-bottom: 16px; }
+      .page-header h1 { font-size: 18px; }
+
+      .detail-card {
+        flex-direction: row;
+        gap: 16px;
+        padding: 16px;
+      }
+      .cover {
+        width: 180px;
+        min-height: 252px;
+      }
+      .detail-body .movie-title { font-size: 18px; }
+      .detail-grid { font-size: 13px; gap: 4px 12px; }
+
+      .skeleton-full { gap: 16px; padding: 16px; }
+      .skeleton-cover { width: 180px; height: 252px; }
+    }
+
+    /* Mobile (≤480px) */
+    @media (max-width: 480px) {
+      .container { padding: 12px 8px; }
+
+      .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 2px;
+        margin-bottom: 12px;
+      }
+      .page-header h1 { font-size: 16px; }
+
+      .detail-card {
+        flex-direction: column;
+        gap: 12px;
+        padding: 12px;
+      }
+      .cover {
+        width: 100%;
+        max-width: 280px;
+        margin: 0 auto;
+        aspect-ratio: 0.7;
+        min-height: auto;
+      }
+      .detail-body .movie-title {
+        font-size: 17px;
+        text-align: center;
+      }
+      .detail-body .movie-id {
+        display: block;
+        text-align: center;
+        margin-bottom: 12px;
+      }
+      .detail-grid {
+        grid-template-columns: 1fr;
+        gap: 2px 0;
+      }
+      .detail-grid .label {
+        font-size: 12px;
+        margin-top: 6px;
+      }
+      .detail-grid .value {
+        font-size: 14px;
+        padding-bottom: 4px;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .section-title { font-size: 14px; }
+
+      .magnet-item {
+        flex-wrap: wrap; gap: 4px 8px;
+        padding: 8px 10px; font-size: 12px;
+      }
+      .magnet-item .magnet-title { flex: 1 1 100%; min-width: 0; }
+      .magnet-meta { font-size: 11px; }
+
+      .skeleton-full { flex-direction: column; gap: 12px; padding: 12px; }
+      .skeleton-cover {
+        width: 160px; height: 224px;
+        margin: 0 auto; align-self: center;
+      }
+      .skeleton-line:first-child { width: 80%; }
+      .skeleton-line:nth-child(2) { width: 50%; }
     }
   </style>
 </head>
 
 <body>
   <div class="container">
-    <h1><a href="/search">番号查询</a> / 影片详情</h1>
-
-    <form id="searchForm" class="search-box">
-      <input id="keyword" type="text" placeholder="输入番号继续搜索，例如：IPX-585" />
-      <button type="submit" class="btn-primary">查询</button>
-    </form>
+    <div class="page-header">
+      <h1><a href="/search">番号查询</a></h1>
+      <span class="breadcrumb">/ 影片详情</span>
+    </div>
 
     <div id="content"></div>
   </div>

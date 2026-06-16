@@ -1,22 +1,12 @@
 (function () {
   var BASE = window.__API_BASE__ || '';
 
-  var searchForm = document.getElementById('searchForm');
-  var keywordInput = document.getElementById('keyword');
   var content = document.getElementById('content');
 
   // Extract movie ID from URL path: /movie/CODE
   var pathParts = window.location.pathname.replace(/\/+$/, '').split('/');
   var code = pathParts[pathParts.length - 1];
   if (code === 'movie') code = ''; // at /movie without an id
-
-  // ---- Search box ----
-  searchForm.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var kw = keywordInput.value.trim();
-    if (!kw) return;
-    window.location.href = '/search?q=' + encodeURIComponent(kw);
-  });
 
   // ---- Helpers ----
 
