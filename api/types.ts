@@ -18,6 +18,7 @@ export interface Movie {
   title: string
   id: string
   img: string | null
+  urlImage?: string | null
   tags: string[]
 }
 
@@ -63,6 +64,8 @@ export interface MovieDetail {
   genres: Property[]
   stars: Property[]
   imageSize: ImageSize | null
+  localImage: string | null
+  urlImage: string | null
   samples: Sample[]
   similarMovies: SimilarMovie[]
   gid: string | null
@@ -108,4 +111,9 @@ export interface GetMoviesQuery {
   magnet?: MagnetType
   filterType?: FilterType
   filterValue?: string
+}
+export interface Genre {
+  id: string;
+  name: string;
+  count?: number;
 }

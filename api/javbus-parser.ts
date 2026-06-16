@@ -1,11 +1,15 @@
 import bytes from 'bytes'
+import got from 'got'
 import { type HTMLElement, parse } from 'node-html-parser'
+import fs from 'node:fs/promises'
+import path from 'node:path'
 import probe from 'probe-image-size'
 
 import client, { agent } from './client.js'
 import { JAVBUS } from './constants.js'
 import type {
   FilterType,
+  Genre,
   GetMoviesQuery,
   ImageSize,
   Magnet,
@@ -39,24 +43,48 @@ const starInfoMap: Record<StarInfoOptionalKey, string> = {
   hobby: '愛好: ',
 }
 
-function parseMoviesPage(pageHTML: string, filter?: (movie: Movie) => boolean): MoviesPage {
+async function parseMoviesPage(pageHTML: string, filter?: (movie: Movie) => boolean): Promise<MoviesPage> {
   const doc = parse(pageHTML)
 
-  const movies = doc
-    .querySelectorAll('#waterfall #waterfall .item')
-    .map((item) => {
-      const img =
-        formatImageUrl(item.querySelector('.photo-frame img')?.getAttribute('src')) ?? null
-      const title = item.querySelector('.photo-frame img')?.getAttribute('title') ?? ''
-      const info = item.querySelectorAll('.photo-info date')
-      const id = info[0]?.textContent
-      const date = info[1]?.textContent ?? null
-      const tags = item.querySelectorAll('.item-tag button').map((item) => item.textContent)
+  const items = doc.querySelectorAll('#waterfall #waterfall .item')
 
-      return { date, id, img, title, tags }
-    })
-    .filter((movie): movie is Movie => Boolean(movie.id))
-    .filter((movie) => filter?.(movie) ?? true)
+  const moviesPromises = items.map(async (item) => {
+    const img = formatImageUrl(item.querySelector('.photo-frame img')?.getAttribute('src')) ?? null
+    const title = item.querySelector('.photo-frame img')?.getAttribute('title') ?? ''
+    const info = item.querySelectorAll('.photo-info date')
+    const id = info[0]?.textContent
+    const date = info[1]?.textContent ?? null
+    const tags = item.querySelectorAll('.item-tag button').map((item) => item.textContent)
+
+    let urlImage: string | null = null
+    if (img && id) {
+      try {
+        const imageBuffer = await got(img, {
+          agent: {
+            http: agent,
+            https: agent,
+          },
+          headers: {
+            Referer: 'https://www.javbus.com/',
+          },
+        }).buffer()
+        // write to gallery if possible; ignore errors
+        try {
+          await fs.writeFile(path.join('/DATA/Gallery', `${id}.jpg`), imageBuffer)
+          urlImage = `https://share.zzoz.xyz/api/public/dl/zRxJh3ep/${id}.jpg?inline=true`
+        } catch {
+          // ignore write errors
+        }
+      } catch {
+        // ignore download errors
+      }
+    }
+
+    return { date, id, img, title, tags, urlImage } as Movie
+  })
+
+  let movies = (await Promise.all(moviesPromises)).filter((movie) => Boolean(movie && movie.id)) as Movie[]
+  if (filter) movies = movies.filter(filter)
 
   const currentPage = Number(doc.querySelector('.pagination .active a')?.textContent ?? '1')
   const pages = doc
@@ -125,11 +153,16 @@ export async function getMoviesByPage({
         ? `${prefix}/${filterValue}/${page}`
         : `${prefix}/page/${page}`
 
-  const res = await client(url, {
-    headers: { Cookie: `existmag=${magnet === 'exist' ? 'mag' : 'all'}` },
-  }).text()
+  // Add random delay
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 300))
 
-  const moviesPage = parseMoviesPage(res)
+  const res = await client(url, {
+    headers: {
+      Cookie: `existmag=${magnet === 'exist' ? 'mag' : 'all'}`,
+      'Referer': JAVBUS,
+    },
+  }).text()
+  const moviesPage = await parseMoviesPage(res)
   const filterInfo =
     filterType && filterValue ? parseFilterInfo(res, filterType, filterValue) : undefined
 
@@ -145,11 +178,17 @@ export async function getMoviesByKeywordAndPage(
   const prefix = !type || type === 'normal' ? `${JAVBUS}/search` : `${JAVBUS}/${type}/search`
   const url = `${prefix}/${encodeURIComponent(keyword)}/${page}&type=1`
 
+  // Add random delay
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 800 + 300))
+
   const res = await client(url, {
-    headers: { Cookie: `existmag=${magnet === 'exist' ? 'mag' : 'all'}` },
+    headers: {
+      Cookie: `existmag=${magnet === 'exist' ? 'mag' : 'all'}`,
+      'Referer': JAVBUS,
+    },
   }).text()
 
-  const moviesPage = parseMoviesPage(res)
+  const moviesPage = await parseMoviesPage(res)
 
   return { ...moviesPage, keyword }
 }
@@ -197,6 +236,9 @@ export async function getMovieMagnets(params: {
 }): Promise<Magnet[]> {
   const { movieId, gid, uc } = params
 
+  // Add random delay
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 500 + 200))
+
   const magnetsRes = await client(`${JAVBUS}/ajax/uncledatoolsbyajax.php`, {
     searchParams: {
       lang: 'zh',
@@ -204,7 +246,8 @@ export async function getMovieMagnets(params: {
       uc,
     },
     headers: {
-      referer: `${JAVBUS}/${movieId}`,
+      'referer': `${JAVBUS}/${movieId}`,
+      'x-requested-with': 'XMLHttpRequest',
     },
   }).text()
 
@@ -297,16 +340,26 @@ function multipleInfoFinder<T>(
 }
 
 export async function getMovieDetail(id: string): Promise<MovieDetail> {
-  const res = await client(`${JAVBUS}/${id}`).text()
+  // Add random delay to avoid rate limiting
+  await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500))
+
+  const res = await client(`${JAVBUS}/${id}`, {
+    headers: {
+      'Referer': JAVBUS,
+    },
+  }).text()
   const doc = parse(res)
 
   /* ----------------- 标题、图片 ------------------ */
   const title = doc.querySelector('.container h3')?.textContent ?? ''
+
   const img =
     formatImageUrl(doc.querySelector('.container .movie .bigImage img')?.getAttribute('src')) ??
     null
 
   let imageSize: ImageSize | null = null
+  let localImage: string | null = null;
+  let urlImage: string | null = null;
 
   if (img) {
     try {
@@ -317,6 +370,24 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
         },
       })
       imageSize = { width, height }
+    } catch {
+      //
+    }
+
+    // Download and save image to local gallery
+    try {
+      const imageBuffer = await got(img, {
+        agent: {
+          http: agent,
+          https: agent,
+        },
+        headers: {
+          Referer: 'https://www.javbus.com/',
+        },
+      }).buffer()
+      await fs.writeFile(path.join('/DATA/Gallery', `${id}.jpg`), imageBuffer)
+      localImage = path.join('/DATA/Gallery', `${id}.jpg`)
+      urlImage = `https://share.zzoz.xyz/api/public/dl/zRxJh3ep/${id}.jpg?inline=true`;
     } catch {
       //
     }
@@ -349,8 +420,23 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
   const gidReg = /var gid = (\d+);/
   const ucReg = /var uc = (\d+);/
 
-  const gid = gidReg.exec(res)?.[1] ?? null
-  const uc = ucReg.exec(res)?.[1] ?? null
+  let gid = gidReg.exec(res)?.[1] ?? null
+  let uc = ucReg.exec(res)?.[1] ?? null
+
+  // Fallback: try to extract from script tags if regex fails
+  // if (!gid || !uc) {
+  //   const scripts = doc.querySelectorAll('script')
+  //   for (const script of scripts) {
+  //     const scriptContent = script.textContent
+  //     if (scriptContent) {
+  //       const gidMatch = /var\\s+gid\\s*=\\s*['\"]?(\\d+)['\"]?\\s*;/.exec(scriptContent)
+  //       const ucMatch = /var\\s+uc\\s*=\\s*['\"]?(\\d+)['\"]?\\s*;/.exec(scriptContent)
+  //       if (gidMatch && !gid) gid = gidMatch[1]
+  //       if (ucMatch && !uc) uc = ucMatch[1]
+  //       if (gid && uc) break
+  //     }
+  //   }
+  // }
 
   /* ----------------- 样品图片 ------------------ */
   const samples = doc
@@ -392,6 +478,8 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
     title,
     img,
     imageSize,
+    localImage,
+    urlImage,
     date,
     videoLength: numberVideoLength,
     director,
@@ -416,4 +504,108 @@ export async function getStarInfo(starId: string, type?: MovieType): Promise<Sta
   const starInfo = parseStarInfo(res, starId)
 
   return starInfo
+}
+
+export async function getGenreMovies(
+  genreId: string,
+  page = '1',
+  type?: MovieType,
+  magnet?: MagnetType,
+) {
+  return getMoviesByPage({
+    page,
+    type,
+    magnet,
+    filterType: 'genre',
+    filterValue: genreId,
+  });
+}
+
+export async function getAllGenres(type?: MovieType): Promise<Genre[]> {
+  const prefix = !type || type === 'normal' ? JAVBUS : `${JAVBUS}/${type}`;
+  const genrePageUrl = `${prefix}/genre`;
+
+  const genres: Genre[] = [];
+  const genreMap = new Map<string, Genre>();
+
+  try {
+    // Fetch the genre listing page at /genre
+    const res = await client(genrePageUrl).text();
+    const doc = parse(res);
+
+    // Look for genre links in the main content area
+    // Try to find the container that holds the genre list (avoid navigation/filter links)
+    // Common containers: .container, #waterfall, or specific genre list containers
+    const container = doc.querySelector('.container') || doc.querySelector('#waterfall') || doc;
+
+    // Get all genre links, but exclude those in navigation or filter sections
+    const allLinks = container.querySelectorAll('a[href*="/genre/"]');
+
+    allLinks.forEach((link) => {
+      const href = link.getAttribute('href');
+      if (!href) return;
+
+      // Skip if it's the current page link, navigation, or filter links
+      if (
+        href === '/genre' ||
+        href.endsWith('/genre') ||
+        href.includes('/genre/sub') ||
+        href.includes('/genre/hd')
+      )
+        return;
+
+      // Extract genre ID from href (e.g., /genre/7w or /uncensored/genre/7w)
+      const genreMatch = href.match(/\/genre\/([^/]+)/);
+      if (!genreMatch || !genreMatch[1]) return;
+
+      const genreId = genreMatch[1];
+
+      // Skip special filter genres like 'sub' and 'hd'
+      if (genreId === 'sub' || genreId === 'hd') return;
+
+      const name = link.textContent?.trim() || '';
+
+      // Skip if name is empty or just navigation text
+      if (
+        !name ||
+        name === '類別' ||
+        name === '有碼類別' ||
+        name === '無碼類別' ||
+        name === '字幕' ||
+        name === '高清'
+      )
+        return;
+
+      // Try to extract count from the link text (e.g., "Genre Name (123)")
+      const countMatch = name.match(/\((\d+)\)$/);
+      const count = countMatch && countMatch[1] ? parseInt(countMatch[1], 10) : undefined;
+      const cleanName = countMatch ? name.replace(/\s*\(\d+\)$/, '').trim() : name;
+
+      if (genreId && cleanName) {
+        // Handle uncensored genres
+        const isUncensored = href.includes('uncensored') || type === 'uncensored';
+        const finalId =
+          isUncensored && !genreId.startsWith('uncensored/') ? `uncensored/${genreId}` : genreId;
+
+        // Only add if we haven't seen this genre ID before
+        if (!genreMap.has(finalId)) {
+          genreMap.set(finalId, {
+            id: finalId,
+            name: cleanName,
+            count,
+          });
+        }
+      }
+    });
+
+    genres.push(...Array.from(genreMap.values()));
+  } catch (e) {
+    // If we can't fetch genres, return empty array
+    // Silently fail - genres list is optional
+  }
+
+  // Sort by name
+  genres.sort((a, b) => a.name.localeCompare(b.name));
+
+  return genres;
 }

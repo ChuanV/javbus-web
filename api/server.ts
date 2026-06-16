@@ -31,6 +31,7 @@ if (SSL_CERT && SSL_KEY && fs.existsSync(SSL_CERT) && fs.existsSync(SSL_KEY)) {
 server
   .listen(PORT, () => {
     console.log(`Server is running at ${scheme}://localhost:${PORT}`)
+    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`)
   })
   .on('error', (e: NodeJS.ErrnoException) => {
     if (e.syscall !== 'listen') {
@@ -39,8 +40,10 @@ server
 
     if (e.code === 'EACCES') {
       console.error(`Port ${PORT} requires elevated privileges`)
+      process.exit(1)
     } else if (e.code === 'EADDRINUSE') {
       console.error(`Port ${PORT} is already in use`)
+      process.exit(1)
     } else {
       throw e
     }
