@@ -360,6 +360,7 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
   let imageSize: ImageSize | null = null
   let localImage: string | null = null;
   let urlImage: string | null = null;
+  let imageBase64: string | null = null;
 
   if (img) {
     try {
@@ -376,7 +377,7 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
 
     // Download and save image to local gallery
     try {
-      const imageBuffer = await got(img, {
+      const imageResp = await got(img, {
         agent: {
           http: agent,
           https: agent,
@@ -384,10 +385,18 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
         headers: {
           Referer: 'https://www.javbus.com/',
         },
-      }).buffer()
+        responseType: 'buffer',
+      })
+      const imageBuffer = imageResp.body as Buffer
       await fs.writeFile(path.join('/DATA/Gallery', `${id}.jpg`), imageBuffer)
       localImage = path.join('/DATA/Gallery', `${id}.jpg`)
       urlImage = `https://share.zzoz.xyz/api/public/dl/zRxJh3ep/${id}.jpg?inline=true`;
+      // const contentType = (imageResp.headers && (imageResp.headers['content-type'] as string)) || 'image/jpeg'
+      // try {
+      //   imageBase64 = `data:${contentType};base64,${imageBuffer.toString('base64')}`
+      // } catch {
+      //   imageBase64 = null
+      // }
     } catch {
       //
     }
@@ -480,6 +489,7 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
     imageSize,
     localImage,
     urlImage,
+    imageBase64,
     date,
     videoLength: numberVideoLength,
     director,

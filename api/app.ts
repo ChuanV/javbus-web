@@ -8,6 +8,7 @@ import path from 'node:path'
 
 import ENV from './env.js'
 import router from './router.js'
+import imageRouter from './image-proxy.js'
 import { QueryValidationError, commonValidate } from './validator-utils.js'
 
 // 扩展 express-session 的 SessionData
@@ -40,7 +41,8 @@ const app = express()
 app.disable('x-powered-by')
 app.set('trust proxy', true)
 
-app.use(express.static('public'))
+// 禁用静态文件中间件自动返回 index.html，确保自定义路由（如 `/`）能生效
+app.use(express.static('public', { index: false }))
 // 用于解析 application/json
 app.use(express.json())
 // 用于解析 application/x-www-form-urlencoded
@@ -50,7 +52,12 @@ app.use(express.urlencoded({ extended: true }))
 app.get('/search', (_req, res) => {
   res.sendFile('search.html', { root: path.join(process.cwd(), 'public') })
 })
-
+app.get('/', (_req, res) => {
+  res.sendFile('search.html', { root: path.join(process.cwd(), 'public') })
+})
+app.get('/doc', (_req, res) => {
+  res.sendFile('index.html', { root: path.join(process.cwd(), 'public') })
+})
 const { JAVBUS_AUTH_TOKEN, ADMIN_USERNAME, ADMIN_PASSWORD, JAVBUS_SESSION_SECRET } = ENV
 const useCredentials = Boolean(ADMIN_USERNAME && ADMIN_PASSWORD)
 const loginValidators = [
@@ -146,6 +153,7 @@ app.get('/search', (_req, res) => {
 })
 
 app.use('/api', router)
+app.use('/image', imageRouter)
 
 app.use((_req, _res, next) => {
   next(new createError.NotFound())

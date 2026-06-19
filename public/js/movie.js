@@ -99,14 +99,28 @@
 
   function lazyLoadCover(el, src) {
     if (!src) return;
-    var observer = new IntersectionObserver(function (entries) {
-      if (entries[0].isIntersecting) {
-        el.style.backgroundImage = 'url(' + src + ')';
-        observer.unobserve(el);
-        observer.disconnect();
-      }
-    }, { rootMargin: '200px' });
-    observer.observe(el);
+    // Clear placeholder and show spinner until image loads
+    el.innerHTML = '';
+    el.classList.add('loading');
+    var spinner = document.createElement('div');
+    spinner.className = 'cover-spinner';
+    el.appendChild(spinner);
+
+    var img = document.createElement('img');
+    img.alt = 'Cover';
+    img.loading = 'lazy';
+    img.src = src;
+    img.addEventListener('load', function () {
+      img.classList.add('loaded');
+      if (spinner.parentNode) spinner.parentNode.removeChild(spinner);
+      el.classList.remove('loading');
+    });
+    img.addEventListener('error', function () {
+      if (spinner.parentNode) spinner.parentNode.removeChild(spinner);
+      el.classList.remove('loading');
+      el.innerHTML = '<div class="magnet-empty">封面加载失败</div>';
+    });
+    el.appendChild(img);
   }
 
   // ---- Main ----
@@ -134,84 +148,130 @@
       var detail = await detailRes.json();
 
       // Phase 2: fetch magnets if gid/uc available
-      var magnets = [];
-      if (detail.gid && detail.uc) {
-        var magnetsUrl = BASE + '/api/magnets/' + encodeURIComponent(codeToLoad) +
-          '?gid=' + encodeURIComponent(detail.gid) + '&uc=' + encodeURIComponent(detail.uc);
-        try {
-          var magsRes = await fetch(magnetsUrl);
-          if (magsRes.ok) {
-            magnets = await magsRes.json();
+        // Build initial HTML and render immediately (progressive rendering)
+        var html = '<div class="detail-card">';
+
+        // Cover
+        var coverSrc = detail.urlImage || detail.img || '';
+        html += '<div class="cover" id="detailCover" aria-label="' + escHtml(detail.title) + '"></div>';
+
+        // Body
+        html += '<div class="detail-body">';
+        html += '<div class="movie-title">' + escHtml(detail.title) + '</div>';
+        html += '<span class="movie-id">' + escHtml(detail.id) + '<button type="button" class="btn-copy" data-link="' + escHtml(detail.id) + '" style="margin-left:8px">复制</button></span>';
+
+        // Detail grid
+        html += '<div class="detail-grid">';
+        if (detail.date) html += '<span class="label">发行日期</span><span class="value">' + escHtml(detail.date) + '</span>';
+        if (detail.videoLength) html += '<span class="label">时长</span><span class="value">' + detail.videoLength + ' 分钟</span>';
+        if (detail.director) html += '<span class="label">导演</span><span class="value">' + escHtml(detail.director.name) + '</span>';
+        if (detail.producer) html += '<span class="label">制作商</span><span class="value">' + escHtml(detail.producer.name) + '</span>';
+        if (detail.publisher) html += '<span class="label">发行商</span><span class="value">' + escHtml(detail.publisher.name) + '</span>';
+        if (detail.series) html += '<span class="label">系列</span><span class="value">' + escHtml(detail.series.name) + '</span>';
+        html += '</div>';
+
+        // Genres
+        if (detail.genres && detail.genres.length) {
+          html += '<div class="genres">';
+          html += '<span class="label" style="color:var(--text-muted);margin-right:6px">类别:</span>';
+          for (var g = 0; g < detail.genres.length; g++) {
+            html += '<span class="genre-tag">' + escHtml(detail.genres[g].name) + '</span>';
           }
-        } catch (e) {
-          // magnets are optional
+          html += '</div>';
         }
-      }
 
-      // Build HTML
-      var html = '<div class="detail-card">';
-
-      // Cover
-      var coverSrc = detail.urlImage || detail.img || '';
-      html += '<div class="cover" id="detailCover" aria-label="' + escHtml(detail.title) + '"></div>';
-
-      // Body
-      html += '<div class="detail-body">';
-      html += '<div class="movie-title">' + escHtml(detail.title) + '</div>';
-      html += '<span class="movie-id">' + escHtml(detail.id) + '<button type="button" class="btn-copy" data-link="' + escHtml(detail.id) + '" style="margin-left:8px">复制</button></span>';
-
-      // Detail grid
-      html += '<div class="detail-grid">';
-      if (detail.date) html += '<span class="label">发行日期</span><span class="value">' + escHtml(detail.date) + '</span>';
-      if (detail.videoLength) html += '<span class="label">时长</span><span class="value">' + detail.videoLength + ' 分钟</span>';
-      if (detail.director) html += '<span class="label">导演</span><span class="value">' + escHtml(detail.director.name) + '</span>';
-      if (detail.producer) html += '<span class="label">制作商</span><span class="value">' + escHtml(detail.producer.name) + '</span>';
-      if (detail.publisher) html += '<span class="label">发行商</span><span class="value">' + escHtml(detail.publisher.name) + '</span>';
-      if (detail.series) html += '<span class="label">系列</span><span class="value">' + escHtml(detail.series.name) + '</span>';
-      html += '</div>';
-
-      // Genres
-      if (detail.genres && detail.genres.length) {
-        html += '<div class="genres">';
-        html += '<span class="label" style="color:var(--text-muted);margin-right:6px">类别:</span>';
-        for (var g = 0; g < detail.genres.length; g++) {
-          html += '<span class="genre-tag">' + escHtml(detail.genres[g].name) + '</span>';
+        // Stars
+        if (detail.stars && detail.stars.length) {
+          html += '<div class="stars-list">';
+          html += '<span class="label" style="color:var(--text-muted);margin-right:6px">演员:</span>';
+          for (var s = 0; s < detail.stars.length; s++) {
+            html += '<span class="star-tag">' + escHtml(detail.stars[s].name) + '</span>';
+          }
+          html += '</div>';
         }
+
+        html += '</div></div>';
+
+        // Magnets placeholder (will be filled asynchronously)
+        html += '<div class="magnet-section" style="margin-top:16px">';
+        html += '<div class="section-title">磁力链接</div>';
+        html += '<div id="magnetsContainer"><div class="magnet-loading">加载中...</div></div>';
         html += '</div>';
-      }
 
-      // Stars
-      if (detail.stars && detail.stars.length) {
-        html += '<div class="stars-list">';
-        html += '<span class="label" style="color:var(--text-muted);margin-right:6px">演员:</span>';
-        for (var s = 0; s < detail.stars.length; s++) {
-          html += '<span class="star-tag">' + escHtml(detail.stars[s].name) + '</span>';
+        // Samples (render immediately if available)
+        if (detail.samples && detail.samples.length) {
+          html += '<div class="samples-section">';
+          html += '<div class="section-title">样片</div>';
+          html += '<div class="samples-grid">';
+          for (var si = 0; si < detail.samples.length; si++) {
+            var sample = detail.samples[si];
+            var src = (sample && (sample.src || sample.url)) || sample || '';
+            if (!src) continue;
+            html += '<a class="sample-link" href="' + escHtml(src) + '" target="_blank" rel="noopener">';
+            html += '<img class="sample-img" loading="lazy" src="' + escHtml(src) + '" alt="sample" />';
+            html += '</a>';
+          }
+          html += '</div></div>';
         }
-        html += '</div>';
-      }
 
-      // Magnets
-      html += '<div class="section-title">磁力链接</div>';
-      if (!detail.gid || !detail.uc) {
-        html += '<div class="magnet-empty">无磁力信息</div>';
-      } else if (magnets.length === 0) {
-        html += '<div class="magnet-empty">未找到磁力链接</div>';
-      } else {
-        html += renderMagnetsHtml(magnets);
-      }
+        // Similar movies (render at bottom)
+        if (detail.similarMovies && detail.similarMovies.length) {
+          html += '<div class="similar-section">';
+          html += '<div class="section-title">相似影片</div>';
+          html += '<div class="similar-grid">';
+          for (var smi = 0; smi < detail.similarMovies.length; smi++) {
+            var sm = detail.similarMovies[smi];
+            var smId = sm.id || '';
+            var smTitle = sm.title || '';
+            var smImg = sm.img || '';
+            html += '<a class="similar-card" href="/movie/' + escHtml(smId) + '">';
+            html += '<img class="similar-thumb" loading="lazy" src="/image/getImage?url=' + escHtml(smImg) + '" alt="' + escHtml(smTitle) + '" />';
+            html += '<span class="similar-title">' + escHtml(smTitle) + '</span>';
+            html += '</a>';
+          }
+          html += '</div></div>';
+        }
 
-      html += '</div></div>';
+        content.innerHTML = html;
 
-      content.innerHTML = html;
+        // Lazy load cover
+        if (coverSrc) {
+          var coverEl = document.getElementById('detailCover');
+          lazyLoadCover(coverEl, coverSrc);
+        }
 
-      // Lazy load cover
-      if (coverSrc) {
-        var coverEl = document.getElementById('detailCover');
-        lazyLoadCover(coverEl, coverSrc);
-      }
+        // Attach copy handler
+        attachCopyDelegation(content);
 
-      // Attach copy handler
-      attachCopyDelegation(content);
+        // Now fetch magnets asynchronously and fill magnetsContainer when ready
+        (async function fetchAndRenderMagnets() {
+          var magnets = [];
+          var container = document.getElementById('magnetsContainer');
+          if (!detail.gid || !detail.uc) {
+            if (container) container.innerHTML = '<div class="magnet-empty">无磁力信息</div>';
+            return;
+          }
+
+          var magnetsUrl = BASE + '/api/magnets/' + encodeURIComponent(codeToLoad) +
+            '?gid=' + encodeURIComponent(detail.gid) + '&uc=' + encodeURIComponent(detail.uc);
+          try {
+            var magsRes = await fetch(magnetsUrl);
+            if (magsRes.ok) {
+              magnets = await magsRes.json();
+            }
+          } catch (e) {
+            // ignore
+          }
+
+          if (!container) return;
+          if (!magnets || magnets.length === 0) {
+            container.innerHTML = '<div class="magnet-empty">未找到磁力链接</div>';
+          } else {
+            container.innerHTML = renderMagnetsHtml(magnets);
+            attachCopyDelegation(container);
+          }
+        })();
+      // (duplicate old rendering removed) progressive rendering handled above
     } catch (err) {
       showError('加载失败: ' + (err.message || String(err)), function () { loadDetail(codeToLoad); });
     }

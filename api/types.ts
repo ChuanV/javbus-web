@@ -65,6 +65,7 @@ export interface MovieDetail {
   stars: Property[]
   imageSize: ImageSize | null
   localImage: string | null
+  imageBase64: string | null
   urlImage: string | null
   samples: Sample[]
   similarMovies: SimilarMovie[]
