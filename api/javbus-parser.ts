@@ -57,29 +57,6 @@ async function parseMoviesPage(pageHTML: string, filter?: (movie: Movie) => bool
     const tags = item.querySelectorAll('.item-tag button').map((item) => item.textContent)
 
     let urlImage: string | null = null
-    if (img && id) {
-      try {
-        const imageBuffer = await got(img, {
-          agent: {
-            http: agent,
-            https: agent,
-          },
-          headers: {
-            Referer: 'https://www.javbus.com/',
-          },
-        }).buffer()
-        // write to gallery if possible; ignore errors
-        try {
-          await fs.writeFile(path.join('/DATA/Gallery', `${id}.jpg`), imageBuffer)
-          urlImage = `https://share.zzoz.xyz/api/public/dl/zRxJh3ep/${id}.jpg?inline=true`
-        } catch {
-          // ignore write errors
-        }
-      } catch {
-        // ignore download errors
-      }
-    }
-
     return { date, id, img, title, tags, urlImage } as Movie
   })
 
@@ -391,12 +368,6 @@ export async function getMovieDetail(id: string): Promise<MovieDetail> {
       await fs.writeFile(path.join('/DATA/Gallery', `${id}.jpg`), imageBuffer)
       localImage = path.join('/DATA/Gallery', `${id}.jpg`)
       urlImage = `https://share.zzoz.xyz/api/public/dl/zRxJh3ep/${id}.jpg?inline=true`;
-      // const contentType = (imageResp.headers && (imageResp.headers['content-type'] as string)) || 'image/jpeg'
-      // try {
-      //   imageBase64 = `data:${contentType};base64,${imageBuffer.toString('base64')}`
-      // } catch {
-      //   imageBase64 = null
-      // }
     } catch {
       //
     }

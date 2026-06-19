@@ -19,7 +19,7 @@
 
   function showSkeleton() {
     results.innerHTML = ''
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 3; i++) {
       const card = document.createElement('div')
       card.className = 'skeleton-card'
       card.innerHTML = `
@@ -40,7 +40,7 @@
     const poster = document.createElement('div')
     poster.className = 'poster'
     const bg = movie.urlImage || movie.url || movie.img || '/icon.png'
-    poster.style.backgroundImage = `url(${bg})`
+    poster.style.backgroundImage = `url(/image/getImage?url=${movie.img})`
     poster.setAttribute('aria-label', movie.title)
 
     const meta = document.createElement('div')
